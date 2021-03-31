@@ -1,5 +1,7 @@
 {
   "name": "acceleshake",
-  "integrations": {},
+  "integrations": {
+    "cordova": {}
+  },
   "type": "angular"
 }
