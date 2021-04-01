@@ -1,14 +1,25 @@
 import { Component, OnInit, ViewChild, Renderer2 } from '@angular/core';
 import { Platform } from "@ionic/angular";
+import { DeviceMotion, DeviceMotionAccelerationData } from "@ionic-native/device-motion/ngx";
+import { Shake } from '@ionic-native/shake/ngx';
 
 @Component({
   selector: 'app-canvas-draw',
   templateUrl: './canvas-draw.component.html',
   styleUrls: ['./canvas-draw.component.scss'],
 })
+
 export class CanvasDrawComponent implements OnInit {
 
   @ViewChild('myCanvas') canvas: any;
+
+
+  last_x = null;
+  last_y = null;
+  last_z = null;
+
+  watch = null;
+  subscription = null;
 
   canvasElement: any;
   lastX: number;
@@ -19,44 +30,74 @@ export class CanvasDrawComponent implements OnInit {
 
   brushSize: number = 10;
 
-  constructor( public platform: Platform, public renderer: Renderer2) { 
+  constructor(public platform: Platform, public renderer: Renderer2, private deviceMotion: DeviceMotion, public shake: Shake) {
     console.log('Hello CanvasDraw Component');
 
     this.availableColours = [
-      '#ffffff',
       '#1abc9c',
       '#3498db',
       '#9b59b6',
       '#e67e22',
-      '#e74c3c'
-  ];
+      '#e74c3c',
+      '#ffffff'
+    ];
   }
 
-  ngOnInit(){}
+  ngOnInit() { }
 
-  ngAfterViewInit(){
+  ngAfterViewInit() {
 
     this.canvasElement = this.canvas.nativeElement;
 
     this.renderer.setAttribute(this.canvasElement, 'width', this.platform.width() + '');
-    this.renderer.setAttribute(this.canvasElement, 'height', this.platform.height() + '');
+    this.renderer.setAttribute(this.canvasElement, 'height', this.platform.height() * 0.83 + '');
+
+    if (this.platform.is("ios")) {
+      this.watch = this.shake.startWatch(60).subscribe(() => {
+        this.clearCanvas();
+      });
+    } else if (this.platform.is("android")) {
+
+      this.subscription = this.deviceMotion.watchAcceleration({ frequency: 200 }).subscribe((acceleration: DeviceMotionAccelerationData) => {
+
+        if (!this.last_x) {
+          this.last_x = acceleration.x;
+          this.last_y = acceleration.y;
+          this.last_z = acceleration.z;
+        }
+
+        let deltaX: number, deltaY: number, deltaZ: number;
+        deltaX = Math.abs(acceleration.x - this.last_x);
+        deltaY = Math.abs(acceleration.y - this.last_y);
+        deltaZ = Math.abs(acceleration.z - this.last_z);
+
+        if (deltaX + deltaY + deltaZ > 3) {
+          this.clearCanvas();
+        }
+
+        this.last_x = acceleration.x;
+        this.last_y = acceleration.y;
+        this.last_z = acceleration.z;
+
+      });
+    }
 
   }
 
-  changeColour(colour){
+  changeColour(colour) {
     this.currentColour = colour;
   }
 
-  changeSize(size){
+  changeSize(size) {
     this.brushSize = size;
   }
 
-  handleStart(ev){
+  handleStart(ev) {
     this.lastX = ev.touches[0].pageX;
     this.lastY = ev.touches[0].pageY;
   }
 
-  handleMove(ev){
+  handleMove(ev) {
 
     let ctx = this.canvasElement.getContext('2d');
     let currentX = ev.touches[0].pageX;
@@ -69,16 +110,16 @@ export class CanvasDrawComponent implements OnInit {
     ctx.closePath();
     ctx.strokeStyle = this.currentColour;
     ctx.lineWidth = this.brushSize;
-    ctx.stroke();       
+    ctx.stroke();
 
     this.lastX = currentX;
     this.lastY = currentY;
 
   }
 
-  clearCanvas(){
+  clearCanvas() {
     let ctx = this.canvasElement.getContext('2d');
-    ctx.clearRect(0, 0, this.canvasElement.width, this.canvasElement.height);   
+    ctx.clearRect(0, 0, this.canvasElement.width, this.canvasElement.height);
   }
 
 }

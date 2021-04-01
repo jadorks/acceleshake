@@ -1,5 +1,5 @@
 import { Component } from '@angular/core';
-import { DeviceMotion, DeviceMotionAccelerationData } from "@ionic-native/device-motion/ngx";
+
 
 @Component({
   selector: 'app-home',
@@ -8,10 +8,7 @@ import { DeviceMotion, DeviceMotionAccelerationData } from "@ionic-native/device
 })
 export class HomePage {
 
-  constructor(private deviceMotion: DeviceMotion,) {}
+  constructor() {}
 
-  ionViewWillEnter(){
-
-  }
 
 }
